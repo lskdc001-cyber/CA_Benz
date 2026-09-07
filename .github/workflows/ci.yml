@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    name: 테스트 (TZ=${{ matrix.tz }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 사후관리 일정은 한국 날짜 기준으로 판정한다.
+        # 서버가 UTC로 도는 환경에서 날짜가 하루 밀리는 버그가 있었기 때문에,
+        # 두 타임존 모두에서 같은 결과가 나오는지 확인한다.
+        tz: [UTC, Asia/Seoul]
+    env:
+      TZ: ${{ matrix.tz }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 단위 테스트
+        run: npm test
+
+  build:
+    name: 빌드
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 프로덕션 빌드
+        run: npm run build
