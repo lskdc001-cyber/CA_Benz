@@ -64,6 +64,7 @@ docs/PLANNING.md    # 사업 기획서
 docs/MARKETING.md   # 마케팅 전략 (고객 확보 / 제품 판매 2트랙)
 scripts/seed.mjs    # 데이터 초기화 스크립트
 .claude/skills/     # 프로젝트 전용 Claude 스킬 (letsgo: "레츠고"로 다음 단계 즉시 실행)
+.github/workflows/  # CI (테스트: UTC/Asia/Seoul 두 타임존, 빌드)
 ```
 
 ## 알려진 제약 / 다음 단계
