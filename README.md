@@ -43,6 +43,8 @@ cp .env.example .env
 - `npm run dev` — 개발 서버 실행
 - `npm run build` / `npm run start` — 프로덕션 빌드 및 실행
 - `npm run seed` — `data/db.json`을 `data/seed.json` 예시 데이터로 초기화
+- `npm test` — 단위 테스트 실행 (사후관리 스케줄러, 날짜 유틸)
+- `npm run test:watch` — 테스트 watch 모드
 
 ## 폴더 구조
 
@@ -54,7 +56,8 @@ app/                # Next.js App Router 페이지 + API 라우트
   crm/               리드 파이프라인(칸반)
   followup/          사후관리 자동화 타임라인
   api/               leads / chat / content / followups API
-lib/                # 공용 로직 (타입, 파일 DB, AI 연동, 팔로업 스케줄러)
+lib/                # 공용 로직 (타입, 파일 DB, AI 연동, 팔로업 스케줄러, 날짜 유틸)
+  *.test.ts          단위 테스트 (vitest)
 components/         # Sidebar 등 공용 UI
 data/               # seed.json(예시 데이터) / db.json(실행 시 생성되는 실데이터, git 미포함)
 docs/PLANNING.md    # 사업 기획서

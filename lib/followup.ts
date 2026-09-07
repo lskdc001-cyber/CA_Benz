@@ -1,5 +1,6 @@
 import type { FollowUpEvent, FollowUpStatus, Lead, MessageKind } from "./types";
 import { nextId } from "./store";
+import { addDays, todayInKst } from "./date";
 
 interface ScheduleTemplate {
   offsetDays: number;
@@ -59,12 +60,6 @@ export const FOLLOWUP_TEMPLATE: ScheduleTemplate[] = [
   },
 ];
 
-function addDays(iso: string, days: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 /** 해당 채널로 광고성 메시지를 보낼 수 있는지 판정한다. */
 function canSendAd(lead: Lead, via: string): boolean {
   const consent = lead.consent;
@@ -75,7 +70,7 @@ function canSendAd(lead: Lead, via: string): boolean {
 
 export function generateFollowUpSchedule(lead: Lead): FollowUpEvent[] {
   if (!lead.deliveryDate) return [];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInKst();
 
   const dated = FOLLOWUP_TEMPLATE.map((tpl) => ({
     tpl,

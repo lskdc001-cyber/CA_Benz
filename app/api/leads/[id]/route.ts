@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readDb, writeDb } from "@/lib/store";
+import { todayInKst } from "@/lib/date";
 import { CONSENT_CHANNELS, LEAD_STAGES } from "@/lib/types";
 import type { ConsentChannel, LeadStage } from "@/lib/types";
 
@@ -39,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (notes !== undefined) lead.notes = notes;
   if (deliveryDate !== undefined) lead.deliveryDate = deliveryDate;
   if (stage === "출고완료" && !lead.deliveryDate) {
-    lead.deliveryDate = new Date().toISOString().slice(0, 10);
+    lead.deliveryDate = todayInKst();
   }
   lead.updatedAt = new Date().toISOString();
 
