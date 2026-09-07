@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readDb, writeDb } from "@/lib/store";
-import { LEAD_STAGES, type LeadStage } from "@/lib/types";
+import { CONSENT_CHANNELS, LEAD_STAGES } from "@/lib/types";
+import type { ConsentChannel, LeadStage } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json();
-  const { stage, notes, deliveryDate } = body as {
+  const { stage, notes, deliveryDate, consent } = body as {
     stage?: LeadStage;
     notes?: string;
     deliveryDate?: string;
+    consent?: { agreed?: boolean; channels?: ConsentChannel[] };
   };
 
   if (stage && !LEAD_STAGES.includes(stage)) {
@@ -23,6 +25,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "리드를 찾을 수 없습니다." }, { status: 404 });
   }
 
+  if (consent) {
+    // 동의/철회 모두 시점을 새로 기록한다 (정보통신망법상 증빙 목적)
+    lead.consent = consent.agreed
+      ? {
+          agreed: true,
+          recordedAt: new Date().toISOString(),
+          channels: (consent.channels || []).filter((ch) => CONSENT_CHANNELS.includes(ch)),
+        }
+      : { agreed: false, recordedAt: new Date().toISOString(), channels: [] };
+  }
   if (stage) lead.stage = stage;
   if (notes !== undefined) lead.notes = notes;
   if (deliveryDate !== undefined) lead.deliveryDate = deliveryDate;

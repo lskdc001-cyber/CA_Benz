@@ -20,6 +20,8 @@ export async function GET() {
     dueToday: allEvents.filter((e) => e.status === "예정").length,
     done: allEvents.filter((e) => e.status === "완료").length,
     pending: allEvents.filter((e) => e.status === "대기").length,
+    // 광고성 메시지인데 수신동의가 없어 발송이 막힌 건수
+    blocked: allEvents.filter((e) => e.status === "발송불가").length,
   };
 
   return NextResponse.json({ timelines, summary });

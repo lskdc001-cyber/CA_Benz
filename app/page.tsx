@@ -22,7 +22,9 @@ export default function OverviewPage() {
   const delivered = db.leads.filter((l) => l.deliveryDate);
   const allEvents = delivered.flatMap((l) => generateFollowUpSchedule(l));
   const followupNext = allEvents.filter((e) => e.status === "예정").length;
-  const followupTotal = allEvents.filter((e) => e.status !== "완료").length;
+  const followupBlocked = allEvents.filter((e) => e.status === "발송불가").length;
+  const followupTotal = allEvents.filter((e) => e.status !== "완료" && e.status !== "발송불가").length;
+  const noConsentLeads = db.leads.filter((l) => !l.consent?.agreed).length;
 
   const stageCounts = LEAD_STAGES.map((stage) => ({
     stage,
@@ -61,14 +63,19 @@ export default function OverviewPage() {
         <div className="kpi">
           <span className="label">사후관리 남은 건</span>
           <span className="value mono">{followupTotal}</span>
-          <span className="delta flag">● {followupNext}건 발송 예정</span>
+          <span className="delta flag">
+            ● {followupNext}건 발송 예정{followupBlocked > 0 && ` · ${followupBlocked}건 동의 필요`}
+          </span>
         </div>
       </div>
 
       <div className="card card-pad">
         <div className="section-title">
           <h2>영업 파이프라인</h2>
-          <span className="hint">전체 {db.leads.length}건 진행 중</span>
+          <span className="hint">
+            전체 {db.leads.length}건 진행 중
+            {noConsentLeads > 0 && ` · 광고 수신 미동의 ${noConsentLeads}명`}
+          </span>
         </div>
         <div className="pipeline-strip">
           {stageCounts.map((s) => (

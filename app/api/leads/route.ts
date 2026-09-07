@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readDb, writeDb, nextId } from "@/lib/store";
-import type { Lead, LeadSource, LeadStage } from "@/lib/types";
+import { CONSENT_CHANNELS, NO_CONSENT } from "@/lib/types";
+import type { ConsentChannel, Lead, LeadSource, LeadStage, MarketingConsent } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,12 +13,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, phone, model, source, notes } = body as {
+  const { name, phone, model, source, notes, consent } = body as {
     name?: string;
     phone?: string;
     model?: string;
     source?: LeadSource;
     notes?: string;
+    consent?: { agreed?: boolean; channels?: ConsentChannel[] };
   };
 
   if (!name || !model) {
@@ -25,6 +27,14 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date().toISOString();
+  const marketingConsent: MarketingConsent = consent?.agreed
+    ? {
+        agreed: true,
+        recordedAt: now,
+        channels: (consent.channels || []).filter((ch) => CONSENT_CHANNELS.includes(ch)),
+      }
+    : { ...NO_CONSENT, recordedAt: now };
+
   const lead: Lead = {
     id: nextId("lead"),
     name,
@@ -33,6 +43,7 @@ export async function POST(req: NextRequest) {
     stage: "신규문의" as LeadStage,
     source: source || "직접등록",
     notes: notes || "",
+    consent: marketingConsent,
     createdAt: now,
     updatedAt: now,
   };

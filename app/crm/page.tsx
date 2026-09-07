@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LEAD_STAGES, type Lead, type LeadSource, type LeadStage } from "@/lib/types";
+import { CONSENT_CHANNELS, LEAD_STAGES } from "@/lib/types";
+import type { ConsentChannel, Lead, LeadSource, LeadStage } from "@/lib/types";
 
 const SOURCE_CLASS: Record<LeadSource, string> = {
   AI봇: "src-bot",
@@ -23,6 +24,8 @@ export default function CrmPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: "", phone: "", model: "" });
+  const [consentAgreed, setConsentAgreed] = useState(false);
+  const [consentChannels, setConsentChannels] = useState<ConsentChannel[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   async function loadLeads() {
@@ -52,6 +55,10 @@ export default function CrmPage() {
     loadLeads();
   }
 
+  function toggleConsentChannel(ch: ConsentChannel) {
+    setConsentChannels((prev) => (prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch]));
+  }
+
   async function addLead(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim() || !form.model.trim()) return;
@@ -59,9 +66,17 @@ export default function CrmPage() {
     await fetch("/api/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: form.name, phone: form.phone, model: form.model, source: "직접등록" }),
+      body: JSON.stringify({
+        name: form.name,
+        phone: form.phone,
+        model: form.model,
+        source: "직접등록",
+        consent: { agreed: consentAgreed, channels: consentAgreed ? consentChannels : [] },
+      }),
     });
     setForm({ name: "", phone: "", model: "" });
+    setConsentAgreed(false);
+    setConsentChannels([]);
     setSubmitting(false);
     loadLeads();
   }
@@ -113,6 +128,39 @@ export default function CrmPage() {
           <button className="btn-primary" type="submit" style={{ width: "auto", padding: "9px 18px" }} disabled={submitting}>
             {submitting ? "등록 중..." : "리드 등록"}
           </button>
+
+          <div className="consent-box">
+            <label className="consent-check">
+              <input
+                type="checkbox"
+                checked={consentAgreed}
+                onChange={(e) => {
+                  setConsentAgreed(e.target.checked);
+                  if (!e.target.checked) setConsentChannels([]);
+                }}
+              />
+              <span>
+                <strong>광고성 정보 수신동의</strong> (선택)
+                <em>
+                  프로모션·재구매 안내 등 광고성 메시지 발송에 필요합니다. 출고 안내·정기점검 등 거래 관련
+                  안내는 동의 없이도 발송됩니다.
+                </em>
+              </span>
+            </label>
+            <div className="chips" aria-label="수신동의 채널">
+              {CONSENT_CHANNELS.map((ch) => (
+                <button
+                  key={ch}
+                  type="button"
+                  className={`chip-toggle ${consentChannels.includes(ch) ? "active" : ""}`}
+                  onClick={() => toggleConsentChannel(ch)}
+                  disabled={!consentAgreed}
+                >
+                  {ch}
+                </button>
+              ))}
+            </div>
+          </div>
         </form>
       </div>
 
@@ -138,6 +186,16 @@ export default function CrmPage() {
                         {lead.stage === "출고완료" && lead.deliveryDate
                           ? `출고 ${lead.deliveryDate}`
                           : relativeDate(lead.updatedAt)}
+                      </span>
+                      <span
+                        className={`consent-badge ${lead.consent?.agreed ? "consent-yes" : "consent-no"}`}
+                        title={
+                          lead.consent?.agreed
+                            ? `수신동의: ${lead.consent.channels.join(", ") || "채널 미지정"}`
+                            : "광고성 정보 수신 미동의 — 프로모션 메시지 발송 불가"
+                        }
+                      >
+                        {lead.consent?.agreed ? `수신동의 ${lead.consent.channels.length}` : "수신 미동의"}
                       </span>
                       <div className="stage-actions">
                         <button
