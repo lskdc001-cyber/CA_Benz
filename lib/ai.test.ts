@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { chatReply, shouldHandoff } from "./ai";
+import { chatReply, generateContent, shouldHandoff } from "./ai";
 import type { ChatMessage } from "./types";
 
 function user(text: string): ChatMessage {
@@ -86,5 +86,55 @@ describe("chatReply (API 키 없이 규칙기반 동작)", () => {
     const res = await chatReply(history);
     expect(res.handoff).toBe(shouldHandoff(history));
     expect(res.handoff).toBe(true);
+  });
+});
+
+describe("generateContent (API 키 없이 템플릿 동작)", () => {
+  beforeEach(() => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+  });
+
+  it("요청한 채널만 생성한다", async () => {
+    const pieces = await generateContent("GLC 300 4MATIC", "9월 프로모션", "신뢰감 있는 전문가", [
+      "네이버 블로그",
+      "유튜브 쇼츠",
+    ]);
+    expect(pieces.map((p) => p.channel)).toEqual(["네이버 블로그", "유튜브 쇼츠"]);
+  });
+
+  it("네이버 블로그는 제목과 이미지 삽입 위치를 함께 준다", async () => {
+    // 네이버는 글쓰기 API가 없어 복붙으로 발행하므로, 제목이 본문과 분리돼 있어야 한다
+    const [blog] = await generateContent("E 300", "가을 프로모션", "신뢰감 있는 전문가", [
+      "네이버 블로그",
+    ]);
+    expect(blog.title).toBeTruthy();
+    expect(blog.body).toContain("[이미지:");
+    expect(blog.notes).toBeTruthy();
+  });
+
+  it("유튜브 쇼츠 대본은 3초 후킹으로 시작하고 타임코드를 붙인다", async () => {
+    const [shorts] = await generateContent("S 580 4MATIC", "연말 혜택", "친근한 대화체", [
+      "유튜브 쇼츠",
+    ]);
+    expect(shorts.body).toMatch(/^\[0-3초\]/);
+    expect(shorts.body).toMatch(/\[46-60초\]/);
+    expect(shorts.notes).toContain("촬영 샷");
+    expect(shorts.title).toBeTruthy();
+  });
+
+  it("카카오채널 문구에는 (광고) 표기와 수신거부 안내가 들어간다", async () => {
+    // 광고성 정보 전송 시 법정 표기 사항이라 문구에서 빠지면 안 된다
+    const [kakao] = await generateContent("GLE 350d", "겨울 프로모션", "간결한 정보형", [
+      "카카오채널",
+    ]);
+    expect(kakao.body).toContain("(광고)");
+    expect(kakao.body).toMatch(/무료수신거부/);
+  });
+
+  it("차종명이 해시태그에 반영된다", async () => {
+    const [insta] = await generateContent("GLC 300 4MATIC", "프로모션", "친근한 대화체", [
+      "인스타그램",
+    ]);
+    expect(insta.hashtags).toContain("#GLC3004MATIC");
   });
 });

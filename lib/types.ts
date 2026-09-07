@@ -73,10 +73,34 @@ export interface ChatSession {
   updatedAt: string;
 }
 
+/**
+ * 콘텐츠 발행 채널.
+ *
+ * 채널마다 자동화 가능 범위가 다르다:
+ * - 인스타그램 / 카카오채널: 문구 생성 후 수동 발행
+ * - 네이버 블로그: 글쓰기 API가 2020년 종료되어 자동 발행 불가.
+ *   검색 노출을 노린 SEO 초안까지 만들고 복사해 붙여넣는다.
+ * - 유튜브 쇼츠: 대본·자막·메타데이터를 만들고, 영상 촬영은 사람이 한다.
+ *   업로드는 YouTube Data API로 자동화 가능(별도 OAuth 설정 필요).
+ */
+export type ContentChannel = "인스타그램" | "네이버 블로그" | "카카오채널" | "유튜브 쇼츠";
+
+export const CONTENT_CHANNELS: ContentChannel[] = [
+  "인스타그램",
+  "네이버 블로그",
+  "카카오채널",
+  "유튜브 쇼츠",
+];
+
 export interface ContentPiece {
-  channel: "인스타그램" | "블로그" | "카카오채널";
+  channel: ContentChannel;
+  /** 본문. 쇼츠는 대본, 블로그는 SEO 구조를 갖춘 원고 */
   body: string;
   hashtags?: string;
+  /** 블로그 제목, 쇼츠 영상 제목 등 본문과 분리해 입력해야 하는 값 */
+  title?: string;
+  /** 촬영 가이드·발행 체크리스트 등 작업자용 메모 (발행물에는 포함하지 않는다) */
+  notes?: string;
 }
 
 export interface ContentRequest {
@@ -84,7 +108,7 @@ export interface ContentRequest {
   model: string;
   promo: string;
   tone: string;
-  channels: ContentPiece["channel"][];
+  channels: ContentChannel[];
   pieces: ContentPiece[];
   createdAt: string;
 }

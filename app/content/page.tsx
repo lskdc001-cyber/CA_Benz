@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ContentPiece, ContentRequest } from "@/lib/types";
+import { CONTENT_CHANNELS } from "@/lib/types";
+import type { ContentChannel, ContentRequest } from "@/lib/types";
 
 const MODELS = ["The new E-Class · E 300", "GLC 300 4MATIC", "S 580 4MATIC", "EQE 350+", "GLE 350d"];
 const TONES = ["신뢰감 있는 전문가", "친근한 대화체", "간결한 정보형"];
-const CHANNELS: ContentPiece["channel"][] = ["인스타그램", "블로그", "카카오채널"];
+const CHANNELS: ContentChannel[] = CONTENT_CHANNELS;
 
 export default function ContentPage() {
   const [model, setModel] = useState(MODELS[1]);
   const [promo, setPromo] = useState("9월 사전계약 개별소비세 혜택");
   const [tone, setTone] = useState(TONES[0]);
-  const [channels, setChannels] = useState<ContentPiece["channel"][]>([...CHANNELS]);
+  const [channels, setChannels] = useState<ContentChannel[]>([...CHANNELS]);
   const [result, setResult] = useState<ContentRequest | null>(null);
   const [history, setHistory] = useState<ContentRequest[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -31,7 +32,7 @@ export default function ContentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function toggleChannel(ch: ContentPiece["channel"]) {
+  function toggleChannel(ch: ContentChannel) {
     setChannels((prev) => (prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch]));
   }
 
@@ -140,12 +141,19 @@ export default function ContentPage() {
                 <div className="card card-pad output-card" key={i}>
                   <div className="oh">
                     <span className="ch">{p.channel}</span>
-                    <button className="copy-btn" type="button" onClick={() => copy(p.body, `${result.id}-${i}`)}>
+                    <button className="copy-btn" type="button" onClick={() => copy(p.title ? `${p.title}\n\n${p.body}` : p.body, `${result.id}-${i}`)}>
                       {copiedKey === `${result.id}-${i}` ? "복사됨" : "복사"}
                     </button>
                   </div>
+                  {p.title && (
+                    <div className="piece-title">
+                      <span className="piece-title-label">제목</span>
+                      <span>{p.title}</span>
+                    </div>
+                  )}
                   <div className="body-text">{p.body}</div>
                   {p.hashtags && <div className="hashtags">{p.hashtags}</div>}
+                  {p.notes && <div className="piece-notes">📋 {p.notes}</div>}
                 </div>
               ))}
             </div>
