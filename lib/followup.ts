@@ -1,6 +1,7 @@
 import type { FollowUpEvent, FollowUpStatus, Lead, MessageKind } from "./types";
 import { nextId } from "./store";
 import { addDays, todayInKst } from "./date";
+import { getConsentInfo } from "./consent";
 
 interface ScheduleTemplate {
   offsetDays: number;
@@ -60,12 +61,27 @@ export const FOLLOWUP_TEMPLATE: ScheduleTemplate[] = [
   },
 ];
 
-/** 해당 채널로 광고성 메시지를 보낼 수 있는지 판정한다. */
-function canSendAd(lead: Lead, via: string): boolean {
-  const consent = lead.consent;
-  if (!consent?.agreed) return false;
+/**
+ * 해당 채널로 광고성 메시지를 보낼 수 있는지 판정한다.
+ * 동의를 받았더라도 2년이 지나 효력을 잃었으면 보낼 수 없다.
+ */
+function canSendAd(lead: Lead, via: string, today: string): boolean {
+  const { status } = getConsentInfo(lead, today);
+  if (status === "미동의" || status === "만료") return false;
   // via 문자열에 동의한 채널명이 포함되어 있으면 발송 가능
-  return consent.channels.some((ch) => via.includes(ch));
+  return (lead.consent?.channels || []).some((ch) => via.includes(ch));
+}
+
+/** 광고성 메시지가 막힌 이유를 설명한다. */
+function blockedReasonFor(lead: Lead, via: string, today: string): string {
+  const info = getConsentInfo(lead, today);
+  if (info.status === "미동의") return "광고성 정보 수신동의를 받지 않았습니다.";
+  if (info.status === "만료") {
+    return info.expiresOn
+      ? `수신동의가 ${info.expiresOn}자로 만료되었습니다(2년 경과). 재동의가 필요합니다.`
+      : "수신동의 시점이 기록되어 있지 않아 유효성을 확인할 수 없습니다. 재동의가 필요합니다.";
+  }
+  return `${via} 채널 수신동의가 없습니다.`;
 }
 
 export function generateFollowUpSchedule(lead: Lead): FollowUpEvent[] {
@@ -78,21 +94,19 @@ export function generateFollowUpSchedule(lead: Lead): FollowUpEvent[] {
   }));
 
   // 발송 가능한 항목만 "예정" 후보가 된다 (차단된 광고성 메시지는 제외)
-  const sendable = dated.filter((d) => d.tpl.kind === "거래안내" || canSendAd(lead, d.tpl.via));
+  const sendable = dated.filter((d) => d.tpl.kind === "거래안내" || canSendAd(lead, d.tpl.via, today));
   const upcoming = sendable.filter((d) => d.dueDate >= today);
   const nextDueDate = upcoming.length > 0 ? upcoming[0].dueDate : undefined;
 
   return dated.map(({ tpl, dueDate }) => {
-    const blocked = tpl.kind === "광고성" && !canSendAd(lead, tpl.via);
+    const blocked = tpl.kind === "광고성" && !canSendAd(lead, tpl.via, today);
 
     let status: FollowUpStatus;
     let blockedReason: string | undefined;
 
     if (blocked) {
       status = "발송불가";
-      blockedReason = lead.consent?.agreed
-        ? `${tpl.via} 채널 수신동의가 없습니다.`
-        : "광고성 정보 수신동의를 받지 않았습니다.";
+      blockedReason = blockedReasonFor(lead, tpl.via, today);
     } else if (dueDate < today) {
       status = "완료";
     } else if (dueDate === nextDueDate) {

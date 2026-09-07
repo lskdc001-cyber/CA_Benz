@@ -21,13 +21,30 @@ const CHAT_SYSTEM_PROMPT = `당신은 한성자동차 벤츠 세일즈 컨설턴
 - 답변은 한국어로, 2~4문장 이내로 간결하게 작성합니다.
 - 브랜드 톤: 전문적이고 정중하되 딱딱하지 않게.`;
 
+/**
+ * 컨설턴트에게 상담을 넘겨야 하는 시점인지 판정한다.
+ *
+ * 첫 문의부터 바로 넘기면 단순 정보 문의까지 전부 인계돼 컨설턴트가 지치므로,
+ * 고객이 두 번 이상 대화를 이어가면서 구매 단계와 직결된 의사를 보였을 때만 넘긴다.
+ *
+ * 규칙기반 응답과 Claude API 응답이 같은 기준을 쓰도록 여기 한 곳에 둔다.
+ * (예전에는 두 경로가 서로 다른 키워드를 써서 API 키 설정 여부에 따라 판정이 달라졌다.)
+ */
+export const HANDOFF_KEYWORDS = /(시승|예약|견적|계약|구매|가격|할부|리스)/;
+
+export function shouldHandoff(history: ChatMessage[]): boolean {
+  const lastUser = [...history].reverse().find((m) => m.role === "user");
+  if (!lastUser) return false;
+
+  const userTurns = history.filter((m) => m.role === "user").length;
+  return HANDOFF_KEYWORDS.test(lastUser.text) && userTurns >= 2;
+}
+
 function ruleBasedChatReply(history: ChatMessage[]): { text: string; handoff: boolean } {
   const lastUser = [...history].reverse().find((m) => m.role === "user");
   const msg = (lastUser?.text || "").toLowerCase();
 
-  const wantsHandoff =
-    /(시승|예약|견적|계약|구매|가격|할부|리스)/.test(msg) &&
-    history.filter((m) => m.role === "user").length >= 2;
+  const wantsHandoff = shouldHandoff(history);
 
   if (/시승|예약/.test(msg)) {
     return {
@@ -74,12 +91,7 @@ export async function chatReply(history: ChatMessage[]): Promise<{ text: string;
       .join("\n")
       .trim();
 
-    const lastUser = [...history].reverse().find((m) => m.role === "user")?.text || "";
-    const handoff =
-      /(시승|예약|견적|계약|구매)/.test(lastUser) &&
-      history.filter((m) => m.role === "user").length >= 2;
-
-    return { text: text || ruleBasedChatReply(history).text, handoff };
+    return { text: text || ruleBasedChatReply(history).text, handoff: shouldHandoff(history) };
   } catch (err) {
     console.error("[ai] chatReply fallback due to error:", err);
     return ruleBasedChatReply(history);

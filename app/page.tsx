@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { readDb } from "@/lib/store";
 import { generateFollowUpSchedule } from "@/lib/followup";
+import { getConsentInfo } from "@/lib/consent";
 import { LEAD_STAGES } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,10 @@ export default function OverviewPage() {
   const followupNext = allEvents.filter((e) => e.status === "예정").length;
   const followupBlocked = allEvents.filter((e) => e.status === "발송불가").length;
   const followupTotal = allEvents.filter((e) => e.status !== "완료" && e.status !== "발송불가").length;
-  const noConsentLeads = db.leads.filter((l) => !l.consent?.agreed).length;
+  const consentInfos = db.leads.map((l) => getConsentInfo(l));
+  const noConsentLeads = consentInfos.filter((i) => i.status === "미동의").length;
+  const expiredConsent = consentInfos.filter((i) => i.status === "만료").length;
+  const expiringConsent = consentInfos.filter((i) => i.status === "만료임박").length;
 
   const stageCounts = LEAD_STAGES.map((stage) => ({
     stage,
@@ -75,6 +79,8 @@ export default function OverviewPage() {
           <span className="hint">
             전체 {db.leads.length}건 진행 중
             {noConsentLeads > 0 && ` · 광고 수신 미동의 ${noConsentLeads}명`}
+            {expiredConsent > 0 && ` · 동의 만료 ${expiredConsent}명`}
+            {expiringConsent > 0 && ` · 만료임박 ${expiringConsent}명`}
           </span>
         </div>
         <div className="pipeline-strip">

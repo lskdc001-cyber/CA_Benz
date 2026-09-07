@@ -1,5 +1,6 @@
 import { readDb } from "@/lib/store";
 import { generateFollowUpSchedule } from "@/lib/followup";
+import { getConsentInfo } from "@/lib/consent";
 import type { FollowUpStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -60,22 +61,42 @@ export default function FollowUpPage() {
               </h2>
               <span className="hint">출고일 {lead.deliveryDate} 기준 자동 생성</span>
             </div>
-            <div className="consent-status">
-              {lead.consent?.agreed ? (
-                <>
-                  <span className="consent-badge consent-yes">수신동의</span>
-                  <span>
-                    동의 채널: {lead.consent.channels.join(", ") || "미지정"}
-                    {lead.consent.recordedAt && ` · 동의일 ${lead.consent.recordedAt.slice(0, 10)}`}
+            {(() => {
+              const info = getConsentInfo(lead);
+              if (info.status === "미동의") {
+                return (
+                  <div className="consent-status">
+                    <span className="consent-badge consent-no">수신 미동의</span>
+                    <span>광고성 메시지는 발송되지 않습니다. CRM에서 수신동의를 받아 주세요.</span>
+                  </div>
+                );
+              }
+              if (info.status === "만료") {
+                return (
+                  <div className="consent-status">
+                    <span className="consent-badge consent-expired">동의 만료</span>
+                    <span>
+                      {info.expiresOn
+                        ? `수신동의가 ${info.expiresOn}자로 만료되었습니다(동의 후 2년 경과).`
+                        : "동의 시점 기록이 없어 유효성을 확인할 수 없습니다."}{" "}
+                      재동의를 받아야 광고성 메시지를 발송할 수 있습니다.
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <div className="consent-status">
+                  <span className={`consent-badge ${info.status === "만료임박" ? "consent-warn" : "consent-yes"}`}>
+                    {info.status === "만료임박" ? `동의 만료 D-${info.daysLeft}` : "수신동의"}
                   </span>
-                </>
-              ) : (
-                <>
-                  <span className="consent-badge consent-no">수신 미동의</span>
-                  <span>광고성 메시지는 발송되지 않습니다. CRM에서 수신동의를 받아 주세요.</span>
-                </>
-              )}
-            </div>
+                  <span>
+                    동의 채널: {lead.consent?.channels.join(", ") || "미지정"}
+                    {lead.consent?.recordedAt && ` · 동의일 ${lead.consent.recordedAt.slice(0, 10)}`}
+                    {info.expiresOn && ` · 만료 ${info.expiresOn}`}
+                  </span>
+                </div>
+              );
+            })()}
             <div className="timeline">
               {events.map((ev) => (
                 <div className="tl-item" key={ev.id}>

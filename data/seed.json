@@ -118,7 +118,7 @@
       "updatedAt": "2026-08-31T10:00:00+09:00",
       "consent": {
         "agreed": true,
-        "recordedAt": "2026-08-31T10:00:00+09:00",
+        "recordedAt": "2024-03-15T10:00:00+09:00",
         "channels": [
           "카카오 알림톡",
           "문자(SMS)",
@@ -154,7 +154,7 @@
       "updatedAt": "2026-08-29T09:00:00+09:00",
       "consent": {
         "agreed": true,
-        "recordedAt": "2026-08-29T09:00:00+09:00",
+        "recordedAt": "2024-09-27T10:00:00+09:00",
         "channels": [
           "문자(SMS)"
         ]
@@ -211,7 +211,7 @@
       "updatedAt": "2026-08-14T09:00:00+09:00",
       "consent": {
         "agreed": true,
-        "recordedAt": "2026-07-20T09:00:00+09:00",
+        "recordedAt": "2024-08-01T09:00:00+09:00",
         "channels": [
           "카카오 알림톡"
         ]

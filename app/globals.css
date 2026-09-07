@@ -357,3 +357,5 @@ section.panel { display: flex; flex-direction: column; gap: 28px; }
 .status-blocked { background: var(--critical-bg); color: var(--critical); }
 .tl-dot.blocked { background: var(--critical); opacity: 0.85; }
 .blocked-reason { color: var(--critical) !important; font-weight: 600; }
+.consent-warn { background: var(--warning-bg); color: var(--warning); }
+.consent-expired { background: var(--critical-bg); color: var(--critical); }

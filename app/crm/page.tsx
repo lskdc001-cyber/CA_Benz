@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getConsentInfo } from "@/lib/consent";
 import { CONSENT_CHANNELS, LEAD_STAGES } from "@/lib/types";
 import type { ConsentChannel, Lead, LeadSource, LeadStage } from "@/lib/types";
 
@@ -187,16 +188,36 @@ export default function CrmPage() {
                           ? `출고 ${lead.deliveryDate}`
                           : relativeDate(lead.updatedAt)}
                       </span>
-                      <span
-                        className={`consent-badge ${lead.consent?.agreed ? "consent-yes" : "consent-no"}`}
-                        title={
-                          lead.consent?.agreed
-                            ? `수신동의: ${lead.consent.channels.join(", ") || "채널 미지정"}`
-                            : "광고성 정보 수신 미동의 — 프로모션 메시지 발송 불가"
-                        }
-                      >
-                        {lead.consent?.agreed ? `수신동의 ${lead.consent.channels.length}` : "수신 미동의"}
-                      </span>
+                      {(() => {
+                        const info = getConsentInfo(lead);
+                        const cls =
+                          info.status === "유효"
+                            ? "consent-yes"
+                            : info.status === "만료임박"
+                              ? "consent-warn"
+                              : info.status === "만료"
+                                ? "consent-expired"
+                                : "consent-no";
+                        const label =
+                          info.status === "유효"
+                            ? `수신동의 ${lead.consent?.channels.length ?? 0}`
+                            : info.status === "만료임박"
+                              ? `동의만료 D-${info.daysLeft}`
+                              : info.status === "만료"
+                                ? "동의 만료"
+                                : "수신 미동의";
+                        const title =
+                          info.status === "미동의"
+                            ? "광고성 정보 수신 미동의 — 프로모션 메시지 발송 불가"
+                            : info.status === "만료"
+                              ? `수신동의가 만료되었습니다${info.expiresOn ? ` (${info.expiresOn})` : ""} — 재동의 필요`
+                              : `수신동의: ${lead.consent?.channels.join(", ") || "채널 미지정"} · 만료 ${info.expiresOn}`;
+                        return (
+                          <span className={`consent-badge ${cls}`} title={title}>
+                            {label}
+                          </span>
+                        );
+                      })()}
                       <div className="stage-actions">
                         <button
                           className="stage-btn"
