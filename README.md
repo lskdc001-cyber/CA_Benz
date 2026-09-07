@@ -3,6 +3,7 @@
 한성자동차 벤츠 세일즈 컨설턴트를 위한 업무 자동화 웹 앱입니다. **AI 고객 상담봇 · 광고/콘텐츠 자동 생성 · 리드/CRM 관리 · 사후관리 자동화** 4가지 기능을 하나의 대시보드에서 제공합니다.
 
 - 📄 사업 기획서: [`docs/PLANNING.md`](docs/PLANNING.md)
+- 📈 마케팅 전략: [`docs/MARKETING.md`](docs/MARKETING.md)
 - 🖥️ 클릭 가능한 프로토타입: 별도 Artifact로 발행됨 (세션 내 링크 참고)
 - 💻 이 저장소: 실제 동작하는 MVP 앱 (Next.js)
 
@@ -57,6 +58,7 @@ lib/                # 공용 로직 (타입, 파일 DB, AI 연동, 팔로업 스
 components/         # Sidebar 등 공용 UI
 data/               # seed.json(예시 데이터) / db.json(실행 시 생성되는 실데이터, git 미포함)
 docs/PLANNING.md    # 사업 기획서
+docs/MARKETING.md   # 마케팅 전략 (고객 확보 / 제품 판매 2트랙)
 scripts/seed.mjs    # 데이터 초기화 스크립트
 ```
 
